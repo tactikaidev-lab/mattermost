@@ -37,11 +37,6 @@ services:
       - MM_EMAILSETTINGS_FEEDBACKEMAIL=noreply@hub.tactik.com.au
       - MM_EMAILSETTINGS_REPLYTOADDRESS=noreply@hub.tactik.com.au
       - MM_EMAILSETTINGS_REQUIREEMAILVERIFICATION=false
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:8065/api/v4/system/ping']
-      interval: 5s
-      timeout: 10s
-      retries: 15
 
   postgres:
     image: 'postgres:16-alpine'
