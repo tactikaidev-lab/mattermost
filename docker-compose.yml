@@ -1,0 +1,71 @@
+services:
+  mattermost:
+    image: 'mattermost/mattermost-team-edition:release-10'
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - mattermost-config:/mattermost/config:rw
+      - mattermost-data:/mattermost/data:rw
+      - mattermost-logs:/mattermost/logs:rw
+      - mattermost-plugins:/mattermost/plugins:rw
+      - mattermost-client-plugins:/mattermost/client/plugins:rw
+      - mattermost-bleve-indexes:/mattermost/bleve-indexes:rw
+    environment:
+      - SERVICE_FQDN_MATTERMOST
+      - MM_SQLSETTINGS_DRIVERNAME=postgres
+      - MM_SQLSETTINGS_DATASOURCE=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+      - MM_SERVICESETTINGS_SITEURL=${SERVICE_URL_MATTERMOST}
+      - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
+      # Authentik SSO via the GitLab OAuth2 connector (generic OAuth2/OIDC client)
+      - MM_GITLABSETTINGS_ENABLE=true
+      - MM_GITLABSETTINGS_ID=${AUTHENTIK_MATTERMOST_CLIENT_ID}
+      - MM_GITLABSETTINGS_SECRET=${AUTHENTIK_MATTERMOST_CLIENT_SECRET}
+      - MM_GITLABSETTINGS_AUTHENDPOINT=https://auth.hub.tactik.com.au/application/o/authorize/
+      - MM_GITLABSETTINGS_TOKENENDPOINT=https://auth.hub.tactik.com.au/application/o/token/
+      - MM_GITLABSETTINGS_USERAPIENDPOINT=https://auth.hub.tactik.com.au/application/o/userinfo/
+      - MM_GITLABSETTINGS_BUTTONTEXT=Log in with Tactik SSO
+      # Transactional email via the shared Brevo relay
+      - MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS=true
+      - MM_EMAILSETTINGS_ENABLESMTPAUTH=true
+      - MM_EMAILSETTINGS_SMTPSERVER=smtp-relay.brevo.com
+      - MM_EMAILSETTINGS_SMTPPORT=587
+      - MM_EMAILSETTINGS_CONNECTIONSECURITY=STARTTLS
+      - MM_EMAILSETTINGS_SMTPUSERNAME=${BREVO_SMTP_USERNAME}
+      - MM_EMAILSETTINGS_SMTPPASSWORD=${BREVO_SMTP_PASSWORD}
+      - MM_EMAILSETTINGS_FEEDBACKNAME=Tactik
+      - MM_EMAILSETTINGS_FEEDBACKEMAIL=noreply@hub.tactik.com.au
+      - MM_EMAILSETTINGS_REPLYTOADDRESS=noreply@hub.tactik.com.au
+      - MM_EMAILSETTINGS_REQUIREEMAILVERIFICATION=false
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8065/api/v4/system/ping']
+      interval: 5s
+      timeout: 10s
+      retries: 15
+
+  postgres:
+    image: 'postgres:16-alpine'
+    restart: unless-stopped
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${SERVICE_USER_POSTGRES}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=mattermost
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${SERVICE_USER_POSTGRES} -d mattermost
+      interval: 5s
+      timeout: 10s
+      retries: 15
+
+volumes:
+  mattermost-config:
+  mattermost-data:
+  mattermost-logs:
+  mattermost-plugins:
+  mattermost-client-plugins:
+  mattermost-bleve-indexes:
+  postgresql-data:
