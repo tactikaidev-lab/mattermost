@@ -13,10 +13,9 @@ services:
       - mattermost-client-plugins:/mattermost/client/plugins:rw
       - mattermost-bleve-indexes:/mattermost/bleve-indexes:rw
     environment:
-      - SERVICE_FQDN_MATTERMOST
       - MM_SQLSETTINGS_DRIVERNAME=postgres
-      - MM_SQLSETTINGS_DATASOURCE=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
-      - MM_SERVICESETTINGS_SITEURL=${SERVICE_URL_MATTERMOST}
+      - MM_SQLSETTINGS_DATASOURCE=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable&connect_timeout=10
+      - MM_SERVICESETTINGS_SITEURL=${MM_SITE_URL}
       - MM_PLUGINSETTINGS_ENABLEUPLOADS=true
       # Authentik SSO via the GitLab OAuth2 connector (generic OAuth2/OIDC client)
       - MM_GITLABSETTINGS_ENABLE=true
@@ -50,13 +49,13 @@ services:
     volumes:
       - postgresql-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=${SERVICE_USER_POSTGRES}
-      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
-      - POSTGRES_DB=mattermost
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U ${SERVICE_USER_POSTGRES} -d mattermost
+        - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       interval: 5s
       timeout: 10s
       retries: 15
